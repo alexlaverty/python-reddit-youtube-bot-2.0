@@ -1,6 +1,10 @@
 # Reddit Video Generator
 
+> This repository is still a work in progress! 
+
 ## Overview
+
+New repository I've created to rewrite the Python Reddit Youtube Bot but this time would like to make the code tidier, optimised and more performant. The old repo is messy and a bit out of control, was getting to hard to maintain.
 
 The Reddit Video Generator is a Python script that creates videos from Reddit posts, including selftext and top comments. It utilizes text-to-speech technology to convert text content into audio, generating an engaging video for a given Reddit post.
 
