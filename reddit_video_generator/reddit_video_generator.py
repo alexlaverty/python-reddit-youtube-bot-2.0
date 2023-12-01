@@ -3,6 +3,7 @@ from typing import List
 import os
 from slugify import slugify
 from moviepy.editor import VideoFileClip, CompositeVideoClip, concatenate_videoclips
+from moviepy.video.fx import all as vfx
 from gtts import gTTS
 from .comment_clip import CommentClip
 from .selftext_clip import SelfTextClip
@@ -10,7 +11,8 @@ from .screenshot import capture_element_screenshot
 import praw
 from settings import (
     VIDEO_GENERATION_CONFIG,
-    VIDEO_CONFIG
+    VIDEO_CONFIG,
+    COMMENT_CONFIG,
 )
 
 class RedditPost:
@@ -30,8 +32,12 @@ class RedditPost:
 
 
 class RedditVideoGenerator:
-    def __init__(self, subreddit_name: str, client_id: str, client_secret: str, user_agent: str,
-                 background_video_path: str, background_music_path: str):
+    def __init__(self, subreddit_name: str,
+                 client_id: str,
+                 client_secret: str,
+                 user_agent: str,
+                 background_video_path: str,
+                 background_music_path: str):
         self.subreddit_name = subreddit_name
         self.client_id = client_id
         self.client_secret = client_secret
@@ -39,8 +45,20 @@ class RedditVideoGenerator:
         self.background_video_path = background_video_path
         self.background_music_path = background_music_path
 
-    def overlay_comments(self, final_clip, concatenated_comments):
-        return CompositeVideoClip([final_clip, concatenated_comments])
+
+    def overlay_comments(self, background_clip, concatenated_comments):
+
+        # Loop the video background if required
+        if concatenated_comments.duration > background_clip.duration:
+            print("Looping Video Background")
+            background_clip = vfx.loop(
+                background_clip, duration=concatenated_comments.duration
+            ).without_audio()
+
+        # Overlay the comments on the background video
+        video = CompositeVideoClip([background_clip, concatenated_comments])
+
+        return video
 
     def authenticate(self) -> praw.Reddit:
         """
@@ -51,7 +69,7 @@ class RedditVideoGenerator:
         return praw.Reddit(client_id=self.client_id, client_secret=self.client_secret, user_agent=self.user_agent)
 
     def get_top_posts(self, limit: int = 10) -> List[RedditPost]:
-        print(f"Getting Top {str(limit)} Reddit Posts")
+        print(f"Retrieving Top {str(limit)} Reddit Posts")
         reddit = self.authenticate()
         subreddit = reddit.subreddit(self.subreddit_name)
         top_posts = subreddit.top(time_filter='day', limit=limit)
@@ -76,8 +94,7 @@ class RedditVideoGenerator:
         print(f"Generating Video : {post.title}")
 
         # Create a folder to store comment audio clips
-        comments_folder = "comments_audio"
-        os.makedirs(comments_folder, exist_ok=True)
+        os.makedirs(COMMENT_CONFIG['output_directory'], exist_ok=True)
 
         # Create a video clip with the specified background video
         background_clip = VideoFileClip(self.background_video_path)

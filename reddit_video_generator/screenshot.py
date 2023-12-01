@@ -43,7 +43,7 @@ def capture_element_screenshot(urls):
         else:
             print("Username and password fields not found.")
 
-        for i, comment in enumerate(urls):
+        for i, comment in enumerate(urls, start=1):
             output_file_name = f"{comment.name}.png"
             output_image_path = os.path.join(COMMENT_CONFIG['output_directory'],
                                              output_file_name)
@@ -63,7 +63,7 @@ def capture_element_screenshot(urls):
             page.locator(element_selector).screenshot(path=output_image_path)
 
             # Break the loop if the number of comments reaches the maximum
-            if i + 1 >= COMMENT_CONFIG['max_comments']:
+            if i + 1 > COMMENT_CONFIG['max_comments']:
                 print(f"Reached the maximum number of comments ({COMMENT_CONFIG['max_comments']}). Stopping.")
                 break
 

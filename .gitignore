@@ -1,5 +1,4 @@
 __pycache__/
 auth.py
-comments_audio/
-comments_screenshots/
+cache/
 final/

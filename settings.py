@@ -15,7 +15,8 @@ COMMENT_CONFIG = {
     'comment_limit': 10,  # Number of comments to include in the video
     'max_comment_length': 600,  # Maximum character limit for comments
     'max_comments': 10,  # Maximum number of comments to add to video
-    'output_directory': "comments_screenshots"
+    'output_directory': "cache",
+    'width': 0.9  # Comment image width
 }
 
 VIDEO_OUTPUT_DIR = 'final'
