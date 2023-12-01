@@ -10,6 +10,7 @@ from settings import (
     VIDEO_OUTPUT_DIR,
 )
 
+
 if __name__ == "__main__":
     # Extract Reddit credentials from auth
     subreddit_name = REDDIT_CONFIG['subreddit_name']

@@ -1,4 +1,5 @@
-final/
-comments_audio/
-auth.py
 __pycache__/
+auth.py
+comments_audio/
+comments_screenshots/
+final/

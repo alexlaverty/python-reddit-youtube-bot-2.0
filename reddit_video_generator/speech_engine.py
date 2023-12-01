@@ -23,7 +23,9 @@ def generate_audio(text, output_path):
                 f"'{text.strip()}'",
                 "--write-media",
                 output_path,
-            ]
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
     else:
         raise ValueError(f"Unsupported speech engine: {speech_engine}")

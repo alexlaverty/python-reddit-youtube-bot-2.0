@@ -51,7 +51,7 @@ class RedditVideoGenerator:
         return praw.Reddit(client_id=self.client_id, client_secret=self.client_secret, user_agent=self.user_agent)
 
     def get_top_posts(self, limit: int = 10) -> List[RedditPost]:
-        print("Getting Top Reddit Posts")
+        print(f"Getting Top {str(limit)} Reddit Posts")
         reddit = self.authenticate()
         subreddit = reddit.subreddit(self.subreddit_name)
         top_posts = subreddit.top(time_filter='day', limit=limit)
@@ -73,7 +73,7 @@ class RedditVideoGenerator:
         return reddit_posts
 
     def generate_video(self, post, output_path: str, comment_limit: int = 10):
-        print(f"Post title: {post.title}")
+        print(f"Generating Video : {post.title}")
 
         # Create a folder to store comment audio clips
         comments_folder = "comments_audio"
