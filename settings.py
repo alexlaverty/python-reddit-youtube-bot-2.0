@@ -2,6 +2,7 @@
 
 REDDIT_CONFIG = {
     'subreddit_name': 'AskReddit',  # Replace with your desired subreddit
+    'post_limit': 25, # Number of Reddit posts to retrieve
 }
 
 VIDEO_CONFIG = {
@@ -12,7 +13,7 @@ VIDEO_CONFIG = {
 }
 
 COMMENT_CONFIG = {
-    'comment_limit': 3,  # Number of comments to include in the video
+    'comment_limit': 10,  # Number of comments to include in the video
     'max_comment_length': 500,  # Maximum character limit for comments
     'output_directory': "cache",
     'width': 0.9  # Comment image width

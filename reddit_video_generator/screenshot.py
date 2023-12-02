@@ -6,18 +6,18 @@ from urllib.parse import urljoin
 
 from settings import (
     COMMENT_CONFIG,
-    VIDEO_OUTPUT_DIR,
 )
 
 base_url = "https://www.reddit.com/"
 
+
 def capture_element_screenshot(urls):
 
-    if not any(not os.path.exists(os.path.join(COMMENT_CONFIG['output_directory'], f"{comment.name}.png"))
+    if not any(not os.path.exists(os.path.join(COMMENT_CONFIG['output_directory'],
+                                               f"{comment.name}.png"))
                for comment in urls[:COMMENT_CONFIG['comment_limit']]):
         print("Comments already screenshotted...")
         return
-
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -27,7 +27,8 @@ def capture_element_screenshot(urls):
 
         page.goto("https://www.reddit.com/login")
 
-        # Check if the first set of selectors exist and fill in the username and password.
+        # Check if the first set of selectors exist and fill in the username
+        # and password.
         if page.query_selector("#loginUsername"):
             page.type("#loginUsername", REDDIT_AUTH["username"])
             page.type("#loginPassword", REDDIT_AUTH["password"])
@@ -53,7 +54,7 @@ def capture_element_screenshot(urls):
                 print(f"Skipping comment screenshot. File already exists: {output_image_path}")
                 continue
 
-            comment_url=urljoin(base_url, comment.permalink)
+            comment_url = urljoin(base_url, comment.permalink)
             print(f"Screenshotting Comment {str(i)} : {comment_url}")
             page.goto(comment_url)
 
@@ -68,6 +69,7 @@ def capture_element_screenshot(urls):
                 break
 
         browser.close()
+
 
 if __name__ == "__main__":
     reddit_comment_urls = [

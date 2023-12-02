@@ -2,19 +2,22 @@
 from typing import List
 import os
 from slugify import slugify
-from moviepy.editor import VideoFileClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, TextClip
+from moviepy.editor import (VideoFileClip,
+                            CompositeVideoClip,
+                            concatenate_videoclips,
+                            AudioFileClip,
+                            TextClip)
 from moviepy.video.fx import all as vfx
-from gtts import gTTS
 from .comment_clip import CommentClip
 from .selftext_clip import SelfTextClip
 from .screenshot import capture_element_screenshot
 from .speech_engine import generate_audio
 import praw
 from settings import (
-    VIDEO_GENERATION_CONFIG,
     VIDEO_CONFIG,
     COMMENT_CONFIG,
 )
+
 
 class RedditPost:
     def __init__(self, title: str, selftext: str, comments: List[str], id:str):
@@ -74,7 +77,9 @@ class RedditVideoGenerator:
 
         :return: Authenticated praw.Reddit instance.
         """
-        return praw.Reddit(client_id=self.client_id, client_secret=self.client_secret, user_agent=self.user_agent)
+        return praw.Reddit(client_id=self.client_id,
+                           client_secret=self.client_secret,
+                           user_agent=self.user_agent)
 
     def get_top_posts(self, limit: int = 10) -> List[RedditPost]:
         print(f"Retrieving Top {str(limit)} Reddit Posts from {self.subreddit_name}")
@@ -98,7 +103,8 @@ class RedditVideoGenerator:
 
         return reddit_posts
 
-    def generate_title_text_clip(self, post, background_clip: VideoFileClip) -> TextClip:
+    def generate_title_text_clip(self, post,
+                                 background_clip: VideoFileClip) -> TextClip:
         title_audio_path = os.path.join(COMMENT_CONFIG['output_directory'], f"{post.id}.mp3")
 
         if not os.path.exists(title_audio_path):
@@ -130,12 +136,13 @@ class RedditVideoGenerator:
         # Create a video clip with the specified background video
         background_clip = VideoFileClip(self.background_video_path)
 
-        title_audio_path = os.path.join(COMMENT_CONFIG['output_directory'], f"{post.id}.mp3")
+        title_audio_path = os.path.join(COMMENT_CONFIG['output_directory'],
+                                        f"{post.id}.mp3")
 
         if not os.path.exists(title_audio_path):
             generate_audio(post.title, title_audio_path)
 
-        #title_audio_clip = AudioFileClip(title_audio_path)
+        # title_audio_clip = AudioFileClip(title_audio_path)
 
         title_text_clip = self.generate_title_text_clip(post, background_clip)
 
@@ -147,7 +154,8 @@ class RedditVideoGenerator:
             # If selftext is empty, use only the background clip
             final_clip = background_clip
 
-        # Retrieve top comments for each post, excluding comments exceeding max_comment_length and those with [removed]
+        # Retrieve top comments for each post, excluding comments exceeding
+        # max_comment_length and those with [removed]
         comments = [
             comment
             for i, comment in enumerate(post.comments.list())
@@ -168,9 +176,11 @@ class RedditVideoGenerator:
 
         # Concatenate all comment clips
         if comment_clips:
-            concatenated_comments = concatenate_videoclips(comment_clips).set_position(('center', 'center'))
+            concatenated_comments = concatenate_videoclips(comment_clips)\
+                                    .set_position(('center', 'center'))
 
-            final_clip = self.overlay_comments(final_clip, concatenated_comments)
+            final_clip = self.overlay_comments(final_clip,
+                                               concatenated_comments)
 
         # Write the final video to the specified output path
         print(f"Writing the final video to the specified output path: {output_path}")

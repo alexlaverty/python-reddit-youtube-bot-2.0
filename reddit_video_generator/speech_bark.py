@@ -5,6 +5,7 @@ from settings import (
     SPEECH_CONFIG
 )
 
+
 def bark_speech(text: str, output_path: str) -> Audio:
     """
     Generate speech audio from text using Bark and save it to a WAV file.
@@ -31,6 +32,7 @@ def bark_speech(text: str, output_path: str) -> Audio:
 
     # play audio in notebook
     return Audio(audio_array, rate=SAMPLE_RATE)
+
 
 # Example usage:
 if __name__ == "__main__":

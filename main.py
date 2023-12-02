@@ -35,7 +35,7 @@ if __name__ == "__main__":
     desired_video_count = VIDEO_GENERATION_CONFIG['desired_video_count']
 
     # Retrieve a batch of posts
-    top_posts = video_generator.get_top_posts(limit=10)  # Adjust the batch size as needed
+    top_posts = video_generator.get_top_posts(limit=REDDIT_CONFIG['post_limit'])  # Adjust the batch size as needed
 
     os.makedirs(VIDEO_OUTPUT_DIR, exist_ok=True)
 

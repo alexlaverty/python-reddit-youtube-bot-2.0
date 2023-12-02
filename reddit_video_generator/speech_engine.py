@@ -1,11 +1,11 @@
 # speech_engine.py
-import os
 from gtts import gTTS
 import subprocess
 from settings import (
     SPEECH_CONFIG
 )
 from .speech_bark import bark_speech
+
 
 def generate_audio(text, output_path):
     speech_engine = SPEECH_CONFIG['engine']
