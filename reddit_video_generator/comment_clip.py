@@ -25,11 +25,6 @@ class CommentClip:
                 print(f"Skipping comment {i} as it contains [removed]")
                 continue
 
-            # Skip comments exceeding the maximum length
-            if len(comment_text.body) > COMMENT_CONFIG['max_comment_length']:
-                print(f"Skipping comment {i} as it exceeds the maximum length")
-                continue
-
             if comment_text.body:
                 print(f"Generating Comment Clip {i}: {comment_text.body}")
                 comment_audio_path = os.path.join(COMMENT_CONFIG['output_directory'], f"{comment_text.name}.mp3")
@@ -51,8 +46,8 @@ class CommentClip:
                 comment_clips.append(comment_image_clip)
 
             # Break the loop if the number of comments reaches the maximum
-            if i + 1 >= COMMENT_CONFIG['max_comments']:
-                print(f"Reached the maximum number of comments ({COMMENT_CONFIG['max_comments']}). Stopping.")
+            if i + 1 > COMMENT_CONFIG['comment_limit']:
+                print(f"Reached the maximum number of comments ({COMMENT_CONFIG['comment_limit']}). Stopping.")
                 break
 
         return comment_clips

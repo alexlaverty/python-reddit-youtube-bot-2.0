@@ -14,7 +14,7 @@ base_url = "https://www.reddit.com/"
 def capture_element_screenshot(urls):
 
     if not any(not os.path.exists(os.path.join(COMMENT_CONFIG['output_directory'], f"{comment.name}.png"))
-               for comment in urls[:COMMENT_CONFIG['max_comments']]):
+               for comment in urls[:COMMENT_CONFIG['comment_limit']]):
         print("Comments already screenshotted...")
         return
 
@@ -63,8 +63,8 @@ def capture_element_screenshot(urls):
             page.locator(element_selector).screenshot(path=output_image_path)
 
             # Break the loop if the number of comments reaches the maximum
-            if i + 1 > COMMENT_CONFIG['max_comments']:
-                print(f"Reached the maximum number of comments ({COMMENT_CONFIG['max_comments']}). Stopping.")
+            if i + 1 > COMMENT_CONFIG['comment_limit']:
+                print(f"Reached the maximum number of comments ({COMMENT_CONFIG['comment_limit']}). Stopping.")
                 break
 
         browser.close()

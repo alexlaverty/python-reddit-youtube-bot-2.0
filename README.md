@@ -53,3 +53,25 @@ The Reddit Video Generator is a Python script that creates videos from Reddit po
    ```bash
    python main.py
    ```
+
+## Bark AI (Experimental)
+
+Experimenting with Using Bark AI Speech Engine to generate Voice Over
+
+```
+pip install git+https://github.com/suno-ai/bark.git
+pip install ipython
+```
+
+Note that using Bark requires a large download to generate the voices
+
+```
+No GPU being used. Careful, inference might be very slow!
+text_2.pt:   2%|██▊ | 115M/5.35G [00:21<14:58, 5.83MB/s]
+```
+
+Generate and listen to Bark AI Voice examples :
+
+```
+https://replicate.com/suno-ai/bark?prediction=s7elcebb7eyi6trzce5l4nqebi
+```

@@ -2,12 +2,13 @@
 from typing import List
 import os
 from slugify import slugify
-from moviepy.editor import VideoFileClip, CompositeVideoClip, concatenate_videoclips
+from moviepy.editor import VideoFileClip, CompositeVideoClip, concatenate_videoclips, AudioFileClip, TextClip
 from moviepy.video.fx import all as vfx
 from gtts import gTTS
 from .comment_clip import CommentClip
 from .selftext_clip import SelfTextClip
 from .screenshot import capture_element_screenshot
+from .speech_engine import generate_audio
 import praw
 from settings import (
     VIDEO_GENERATION_CONFIG,
@@ -48,12 +49,19 @@ class RedditVideoGenerator:
 
     def overlay_comments(self, background_clip, concatenated_comments):
 
+        print(f"final_clip.duration : {str(background_clip.duration)}")
+        print(f"concatenated_comments.duration : {str(concatenated_comments.duration)}")
+
         # Loop the video background if required
         if concatenated_comments.duration > background_clip.duration:
             print("Looping Video Background")
             background_clip = vfx.loop(
                 background_clip, duration=concatenated_comments.duration
             ).without_audio()
+        else:
+            # Trim background clip to duration of the comment clips
+            print("Trimming background video to comments duration...")
+            background_clip = background_clip.subclip(0, concatenated_comments.duration)
 
         # Overlay the comments on the background video
         video = CompositeVideoClip([background_clip, concatenated_comments])
@@ -69,7 +77,7 @@ class RedditVideoGenerator:
         return praw.Reddit(client_id=self.client_id, client_secret=self.client_secret, user_agent=self.user_agent)
 
     def get_top_posts(self, limit: int = 10) -> List[RedditPost]:
-        print(f"Retrieving Top {str(limit)} Reddit Posts")
+        print(f"Retrieving Top {str(limit)} Reddit Posts from {self.subreddit_name}")
         reddit = self.authenticate()
         subreddit = reddit.subreddit(self.subreddit_name)
         top_posts = subreddit.top(time_filter='day', limit=limit)
@@ -90,6 +98,29 @@ class RedditVideoGenerator:
 
         return reddit_posts
 
+    def generate_title_text_clip(self, post, background_clip: VideoFileClip) -> TextClip:
+        title_audio_path = os.path.join(COMMENT_CONFIG['output_directory'], f"{post.id}.mp3")
+
+        if not os.path.exists(title_audio_path):
+            generate_audio(post.title, title_audio_path)
+
+        title_audio_clip = AudioFileClip(title_audio_path)
+
+        title_text_clip = (
+            TextClip(post.title,
+                     color='white',
+                     font="Verdana-Bold",
+                     fontsize=70,
+                     method="caption",
+                     size=background_clip.size,
+                     stroke_color='black',
+                     stroke_width=2)
+            .set_audio(title_audio_clip)
+            .set_duration(title_audio_clip.duration)
+        )
+
+        return title_text_clip
+
     def generate_video(self, post, output_path: str, comment_limit: int = 10):
         print(f"Generating Video : {post.title}")
 
@@ -99,6 +130,15 @@ class RedditVideoGenerator:
         # Create a video clip with the specified background video
         background_clip = VideoFileClip(self.background_video_path)
 
+        title_audio_path = os.path.join(COMMENT_CONFIG['output_directory'], f"{post.id}.mp3")
+
+        if not os.path.exists(title_audio_path):
+            generate_audio(post.title, title_audio_path)
+
+        #title_audio_clip = AudioFileClip(title_audio_path)
+
+        title_text_clip = self.generate_title_text_clip(post, background_clip)
+
         # Read out the selftext using text-to-speech if it's not empty
         selftext_clip = SelfTextClip.create(post.selftext)
         if selftext_clip:
@@ -107,9 +147,14 @@ class RedditVideoGenerator:
             # If selftext is empty, use only the background clip
             final_clip = background_clip
 
-        # Retrieve top comments for each post
-        comments = [comment if not isinstance(comment, praw.models.MoreComments) else ""
-                    for comment in post.comments.list() if hasattr(comment, 'body')]
+        # Retrieve top comments for each post, excluding comments exceeding max_comment_length and those with [removed]
+        comments = [
+            comment
+            for i, comment in enumerate(post.comments.list())
+            if hasattr(comment, 'body')
+            and len(comment.body) <= COMMENT_CONFIG['max_comment_length']
+            and "[removed]" not in comment.body
+        ]
 
         capture_element_screenshot(comments)
 
@@ -119,9 +164,12 @@ class RedditVideoGenerator:
                                                          post.slugified_title,
                                                          background_clip)
 
+        comment_clips.insert(0, title_text_clip)
+
         # Concatenate all comment clips
         if comment_clips:
             concatenated_comments = concatenate_videoclips(comment_clips).set_position(('center', 'center'))
+
             final_clip = self.overlay_comments(final_clip, concatenated_comments)
 
         # Write the final video to the specified output path

@@ -42,6 +42,8 @@ if __name__ == "__main__":
     # Loop until the desired number of videos is reached
     generated_video_count = 0
 
+    print(f"Comment limit set to : {comment_limit}")
+
     for i, post in enumerate(top_posts, start=1):
         if generated_video_count >= desired_video_count:
             break  # Exit the loop if the desired number of videos is reached
