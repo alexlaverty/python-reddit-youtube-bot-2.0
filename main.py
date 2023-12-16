@@ -6,8 +6,6 @@ from settings import (
     COMMENT_CONFIG,
     REDDIT_CONFIG,
     VIDEO_CONFIG,
-    VIDEO_GENERATION_CONFIG,
-    VIDEO_OUTPUT_DIR,
 )
 
 
@@ -32,12 +30,12 @@ if __name__ == "__main__":
     )
 
     # Specify the desired number of videos to generate
-    desired_video_count = VIDEO_GENERATION_CONFIG['desired_video_count']
+    desired_video_count = VIDEO_CONFIG['desired_video_count']
 
     # Retrieve a batch of posts
     top_posts = video_generator.get_top_posts(limit=REDDIT_CONFIG['post_limit'])  # Adjust the batch size as needed
 
-    os.makedirs(VIDEO_OUTPUT_DIR, exist_ok=True)
+    os.makedirs(VIDEO_CONFIG['output_directory'], exist_ok=True)
 
     # Loop until the desired number of videos is reached
     generated_video_count = 0
@@ -48,7 +46,7 @@ if __name__ == "__main__":
         if generated_video_count >= desired_video_count:
             break  # Exit the loop if the desired number of videos is reached
 
-        output_path = os.path.join(VIDEO_OUTPUT_DIR, f"{post.slugified_title}.mp4")
+        output_path = os.path.join(VIDEO_CONFIG['output_directory'], f"{post.slugified_title}.mp4")
 
         if os.path.exists(output_path):
             print(f"Skipping Already Exists : {post.title}")

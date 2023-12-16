@@ -10,32 +10,17 @@ from settings import (
 
 base_url = "https://www.reddit.com/"
 
+class RedditScreenshotCapture:
+    def __init__(self):
+        self.browser = None
 
-def capture_element_screenshot(urls):
-
-    if not any(not os.path.exists(os.path.join(COMMENT_CONFIG['output_directory'],
-                                               f"{comment.name}.png"))
-               for comment in urls[:COMMENT_CONFIG['comment_limit']]):
-        print("Comments already screenshotted...")
-        return
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
-        page.set_viewport_size(ViewportSize(width=1920, height=1080))
-
-        page.goto("https://www.reddit.com/login")
-
-        # Check if the first set of selectors exist and fill in the username
-        # and password.
+    def _login(self, page):
+        # Assuming there is a login form with username and password fields
         if page.query_selector("#loginUsername"):
             page.type("#loginUsername", REDDIT_AUTH["username"])
             page.type("#loginPassword", REDDIT_AUTH["password"])
             page.click('button[type="submit"]')
             page.wait_for_url("https://www.reddit.com/")
-
-        # If the first set of selectors don't exist, try the second set.
         elif page.query_selector("#login-username"):
             page.type("#login-username", REDDIT_AUTH["username"])
             page.type("#login-password", REDDIT_AUTH["password"])
@@ -44,31 +29,80 @@ def capture_element_screenshot(urls):
         else:
             print("Username and password fields not found.")
 
-        for i, comment in enumerate(urls, start=1):
-            output_file_name = f"{comment.name}.png"
-            output_image_path = os.path.join(COMMENT_CONFIG['output_directory'],
-                                             output_file_name)
+    def _skip_comment_if_exists(self, comment, output_image_path):
+        if os.path.exists(output_image_path):
+            print(f"Skipping comment screenshot. File already exists: {output_image_path}")
+            return True
+        return False
 
-            # Skip if output_image_path already exists
-            if os.path.exists(output_image_path):
-                print(f"Skipping comment screenshot. File already exists: {output_image_path}")
-                continue
+    def _capture_screenshot_legacy_layout(self, page, comment, output_image_path):
+        page.locator(f"#t1_{comment.id}").screenshot(path=output_image_path)
 
-            comment_url = urljoin(base_url, comment.permalink)
-            print(f"Screenshotting Comment {str(i)} : {comment_url}")
-            page.goto(comment_url)
+    def _capture_screenshot_new_layout(self, page, comment, output_image_path):
+        page.wait_for_selector('shreddit-comment')
+        selector = f'shreddit-comment[thingid="t1_{comment.id}"]'
+        entry_element = page.wait_for_selector(selector)
 
-            # Wait for the element to be present before taking a screenshot
-            element_selector = f"id={comment.name}"
-            page.wait_for_selector(element_selector)
-            page.locator(element_selector).screenshot(path=output_image_path)
+        collapsed_attribute_exists = page.eval_on_selector(
+            selector, '(comment) => comment.hasAttribute("collapsed")'
+        )
 
-            # Break the loop if the number of comments reaches the maximum
-            if i + 1 > COMMENT_CONFIG['comment_limit']:
-                print(f"Reached the maximum number of comments ({COMMENT_CONFIG['comment_limit']}). Stopping.")
-                break
+        children_attribute_exists = page.eval_on_selector(
+            selector, '(comment) => comment.hasAttribute("has-children")'
+        )
 
-        browser.close()
+        if collapsed_attribute_exists:
+            button_selector = f'{selector} details summary div button'
+            page.wait_for_selector(button_selector)
+            page.click(button_selector)
+            print(f"Expanded the collapsed shreddit-comment with thingid t1_{comment.id}.")
+
+        if children_attribute_exists:
+            comment_fold_button_selector = f'#comment-fold-button'
+            page.wait_for_selector(comment_fold_button_selector)
+            page.click(comment_fold_button_selector)
+
+        if entry_element.is_visible():
+            entry_element.screenshot(path=output_image_path)
+
+    def _capture_element_screenshot(self, page, comment, output_image_path):
+        if self._is_new_layout(page):
+            self._capture_screenshot_new_layout(page, comment, output_image_path)
+        else:
+            self._capture_screenshot_legacy_layout(page, comment, output_image_path)
+
+    def _is_new_layout(self, page):
+        page.wait_for_selector('html')
+        return 'is-shredtop-pdp' in page.eval_on_selector('html', '(htmlElement) => htmlElement.className')
+
+    def capture_element_screenshot(self, urls):
+        with sync_playwright() as p:
+            self.browser = p.chromium.launch(headless=False)
+            context = self.browser.new_context()
+            page = context.new_page()
+            page.set_viewport_size(ViewportSize(width=1920, height=1080))
+
+            page.goto("https://www.reddit.com/login")
+            self._login(page)
+
+            for i, comment in enumerate(urls, start=1):
+                output_file_name = f"{comment.name}.png"
+                output_image_path = os.path.join(COMMENT_CONFIG['output_directory'], output_file_name)
+
+                if self._skip_comment_if_exists(comment, output_image_path):
+                    continue
+
+                comment_url = urljoin(base_url, comment.permalink)
+                print(f"Screenshotting Comment {str(i)} : {comment_url}")
+                page.goto(comment_url)
+
+                self._capture_element_screenshot(page, comment, output_image_path)
+
+                if i + 1 > COMMENT_CONFIG['comment_limit']:
+                    print(f"Reached the maximum number of comments ({COMMENT_CONFIG['comment_limit']}). Stopping.")
+                    break
+
+            self.browser.close()
 
 
 if __name__ == "__main__":
@@ -80,5 +114,6 @@ if __name__ == "__main__":
         # Add more URLs as needed
     ]
 
-    capture_element_screenshot(reddit_comment_urls)
+    screenshot_capture = RedditScreenshotCapture()
+    screenshot_capture.capture_element_screenshot(reddit_comment_urls)
     print("Screenshots saved.")

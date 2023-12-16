@@ -10,7 +10,7 @@ from moviepy.editor import (VideoFileClip,
 from moviepy.video.fx import all as vfx
 from .comment_clip import CommentClip
 from .selftext_clip import SelfTextClip
-from .screenshot import capture_element_screenshot
+from .screenshot import RedditScreenshotCapture
 from .speech_engine import generate_audio
 import praw
 from settings import (
@@ -164,7 +164,8 @@ class RedditVideoGenerator:
             and "[removed]" not in comment.body
         ]
 
-        capture_element_screenshot(comments)
+        screenshot_capture = RedditScreenshotCapture()
+        screenshot_capture.capture_element_screenshot(comments)
 
         # Create a list to store comment clips
         comment_clips = CommentClip.create_comment_clips(comments,
