@@ -1,12 +1,9 @@
 from bark import SAMPLE_RATE, generate_audio, preload_models
 from scipy.io.wavfile import write as write_wav
 from IPython.display import Audio
-from settings import (
-    SPEECH_CONFIG
-)
+from settings import YouTubeChannelConfig
 
-
-def bark_speech(text: str, output_path: str) -> Audio:
+def bark_speech(text: str, output_path: str, config: YouTubeChannelConfig) -> Audio:
     """
     Generate speech audio from text using Bark and save it to a WAV file.
 
@@ -25,7 +22,7 @@ def bark_speech(text: str, output_path: str) -> Audio:
 
     # generate audio from text
     audio_array = generate_audio(text,
-                                 history_prompt=SPEECH_CONFIG['barkvoice'])
+                                 history_prompt=config.barkvoice)
 
     # save audio to disk
     write_wav(output_path, SAMPLE_RATE, audio_array)

@@ -5,3 +5,7 @@ REDDIT_AUTH = {
     'username': '',
     'password': ''
 }
+
+ELEVENLABS = {
+    'api_key': ''
+}

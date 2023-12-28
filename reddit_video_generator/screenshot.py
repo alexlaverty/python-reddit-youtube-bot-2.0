@@ -4,15 +4,12 @@ from playwright.sync_api import ViewportSize, sync_playwright
 from auth import REDDIT_AUTH
 from urllib.parse import urljoin
 
-from settings import (
-    COMMENT_CONFIG,
-)
-
 base_url = "https://www.reddit.com/"
 
 class RedditScreenshotCapture:
-    def __init__(self):
+    def __init__(self, config):
         self.browser = None
+        self.config = config
 
     def _login(self, page):
         # Assuming there is a login form with username and password fields
@@ -77,7 +74,7 @@ class RedditScreenshotCapture:
 
     def capture_element_screenshot(self, urls):
         with sync_playwright() as p:
-            self.browser = p.chromium.launch(headless=False)
+            self.browser = p.chromium.launch(headless=True)
             context = self.browser.new_context()
             page = context.new_page()
             page.set_viewport_size(ViewportSize(width=1920, height=1080))
@@ -87,7 +84,7 @@ class RedditScreenshotCapture:
 
             for i, comment in enumerate(urls, start=1):
                 output_file_name = f"{comment.name}.png"
-                output_image_path = os.path.join(COMMENT_CONFIG['output_directory'], output_file_name)
+                output_image_path = os.path.join(self.config.comment_output_directory, output_file_name)
 
                 if self._skip_comment_if_exists(comment, output_image_path):
                     continue
@@ -98,8 +95,8 @@ class RedditScreenshotCapture:
 
                 self._capture_element_screenshot(page, comment, output_image_path)
 
-                if i + 1 > COMMENT_CONFIG['comment_limit']:
-                    print(f"Reached the maximum number of comments ({COMMENT_CONFIG['comment_limit']}). Stopping.")
+                if i + 1 > self.config.comment_limit:
+                    print(f"Reached the maximum number of comments ({self.config.comment_limit}). Stopping.")
                     break
 
             self.browser.close()

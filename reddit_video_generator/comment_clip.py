@@ -3,7 +3,7 @@ import os
 from moviepy.editor import (AudioFileClip,
                             ImageClip)
 from .speech_engine import generate_audio
-from settings import COMMENT_CONFIG
+#from settings import COMMENT_CONFIG
 
 
 class CommentClip:
@@ -12,7 +12,8 @@ class CommentClip:
                              comments,
                              comment_limit,
                              slugified_title,
-                             background_clip):
+                             background_clip,
+                             config):
         comment_clips = []
 
         for i, comment_text in enumerate(comments, start=1):
@@ -26,15 +27,15 @@ class CommentClip:
 
             if comment_text.body:
                 print(f"Generating Comment Clip {i}: {comment_text.body}")
-                comment_audio_path = os.path.join(COMMENT_CONFIG['output_directory'],
+                comment_audio_path = os.path.join(config.comment_output_directory,
                                                   f"{comment_text.name}.mp3")
 
                 if not os.path.exists(comment_audio_path):
-                    generate_audio(comment_text.body, comment_audio_path)
+                    generate_audio(comment_text.body, comment_audio_path, config)
 
                 comment_audio_clip = AudioFileClip(comment_audio_path)
 
-                image_path = os.path.join(COMMENT_CONFIG['output_directory'],
+                image_path = os.path.join(config.comment_output_directory,
                                           f"{comment_text.name}.png")
 
                 comment_image_clip: ImageClip = (
@@ -42,14 +43,14 @@ class CommentClip:
                     .set_duration(comment_audio_clip.duration)
                     .set_audio(comment_audio_clip)
                     .resize(width=background_clip.size[0]
-                            * COMMENT_CONFIG['width'])
+                            * config.comment_width)
                 )
 
                 comment_clips.append(comment_image_clip)
 
             # Break the loop if the number of comments reaches the maximum
-            if i + 1 > COMMENT_CONFIG['comment_limit']:
-                print(f"Reached the maximum number of comments ({COMMENT_CONFIG['comment_limit']}). Stopping.")
+            if i + 1 > config.comment_limit:
+                print(f"Reached the maximum number of comments ({config.comment_limit}). Stopping.")
                 break
 
         return comment_clips

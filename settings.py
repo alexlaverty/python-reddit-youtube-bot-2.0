@@ -1,27 +1,32 @@
-# settings.py
+from dataclasses import dataclass, field
 
-REDDIT_CONFIG = {
-    'subreddit_name': 'AskReddit',  # Replace with your desired subreddit
-    'post_limit': 30, # Number of Reddit posts to retrieve
-}
+@dataclass
+class YouTubeChannelConfig:
+    channel_name: str
+    client_secret_file: str
+    credentials_storage_file: str
+    theme_background_color: str = "#ffffff"
+    theme_font_color: str = "#000000"
+    subreddit_name: str = "AskReddit"
+    post_limit: int = 50
+    # Additional fields from settings.py
+    background_video_path: str = 'video_background.mp4'
+    background_music_path: str = 'video_music.mp3'
+    desired_video_length: int = 180
+    enable_nsfw: bool = False
+    desired_video_count: int = 1
+    output_directory: str = 'final'
+    comment_limit: int = 10
+    max_comment_length: int = 500
+    comment_output_directory: str = "cache"
+    comment_width: float = 0.9
+    speech_engine: str = 'edge-tts'
+    barkvoice: str = 'en_speaker_5'
 
-VIDEO_CONFIG = {
-    'background_video_path': 'video_background.mp4',
-    'background_music_path': 'video_music.mp3',
-    'desired_video_length': 180,  # Desired Video Length in Seconds
-    'EnableNSFW': False, # Allow NSFW Posts
-    'desired_video_count': 1,  # Replace with the desired number of videos
-    'output_directory': 'final'
-}
+@dataclass
+class Theme:
+    background_color: str
+    font_color: str
 
-COMMENT_CONFIG = {
-    'comment_limit': 10,  # Number of comments to include in the video
-    'max_comment_length': 500,  # Maximum character limit for comments
-    'output_directory': "cache",
-    'width': 0.9  # Comment image width
-}
-
-SPEECH_CONFIG = {
-    'engine': 'edge-tts',
-    'barkvoice' : 'en_speaker_5'
-}
+    def __str__(self):
+        return f"Background Color: {self.background_color}\nFont Color: {self.font_color}"

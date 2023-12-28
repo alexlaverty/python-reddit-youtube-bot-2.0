@@ -1,56 +1,55 @@
 # main.py
 import os
 from reddit_video_generator.reddit_video_generator import RedditVideoGenerator
-from auth import REDDIT_AUTH
-from settings import (
-    COMMENT_CONFIG,
-    REDDIT_CONFIG,
-    VIDEO_CONFIG,
+from settings import YouTubeChannelConfig, Theme
+
+# Example Configuration for two YouTube channels
+ttsvibelounge_config = YouTubeChannelConfig(
+    channel_name="TTSVibeLounge",
+    client_secret_file="client_secret_TTSVibeLounge.json",
+    credentials_storage_file="credentials_TTSVibeLounge.storage",
+    subreddit_name='askreddit+antiwork+AskMen+ChoosingBeggars+hatemyjob+NoStupidQuestions+pettyrevenge+Showerthoughts+TooAfraidToAsk+TwoXChromosomes+unpopularopinion+confessions+confession',
 )
 
+AussieBanterReddit_config = YouTubeChannelConfig(
+    channel_name="Aussie Banter Reddit",
+    client_secret_file="client_secret_AussieBanterReddit.json",
+    credentials_storage_file="credentials_AussieBanterReddit.storage",
+    subreddit_name='adelaide+askanaustralian+ausfinance+australia+brisbane+melbourne+perth+queensland+sydney+westernaustralia',
+    background_video_path='aussiebanter.mp4'
+)
 
-if __name__ == "__main__":
-    # Extract Reddit credentials from auth
-    subreddit_name = REDDIT_CONFIG['subreddit_name']
+YoutubeChannels = [ttsvibelounge_config, AussieBanterReddit_config]
 
-    # Extract video-related settings from settings
-    background_video_path = VIDEO_CONFIG['background_video_path']
-    background_music_path = VIDEO_CONFIG['background_music_path']
+def process_video_for_channel(RedditVideo):
+    subreddit_name = RedditVideo.config.subreddit_name
+    print(f"Processing channel : {RedditVideo.config.channel_name}")
+    desired_video_count = RedditVideo.config.desired_video_count
+    comment_limit = RedditVideo.config.comment_limit
 
-    # Extract comment-related settings from settings
-    comment_limit = COMMENT_CONFIG['comment_limit']
+    top_posts = RedditVideo.get_top_posts(limit=RedditVideo.config.post_limit)
 
-    video_generator = RedditVideoGenerator(
-        subreddit_name=subreddit_name,
-        client_id=REDDIT_AUTH["client_id"],
-        client_secret=REDDIT_AUTH["client_secret"],
-        user_agent=REDDIT_AUTH["user_agent"],
-        background_video_path=VIDEO_CONFIG["background_video_path"],
-        background_music_path=VIDEO_CONFIG["background_music_path"],
-    )
+    os.makedirs(RedditVideo.config.output_directory, exist_ok=True)
 
-    # Specify the desired number of videos to generate
-    desired_video_count = VIDEO_CONFIG['desired_video_count']
-
-    # Retrieve a batch of posts
-    top_posts = video_generator.get_top_posts(limit=REDDIT_CONFIG['post_limit'])  # Adjust the batch size as needed
-
-    os.makedirs(VIDEO_CONFIG['output_directory'], exist_ok=True)
-
-    # Loop until the desired number of videos is reached
     generated_video_count = 0
 
-    print(f"Comment limit set to : {comment_limit}")
+    print(f"Comment limit set to: {comment_limit}")
 
     for i, post in enumerate(top_posts, start=1):
         if generated_video_count >= desired_video_count:
-            break  # Exit the loop if the desired number of videos is reached
+            break
 
-        output_path = os.path.join(VIDEO_CONFIG['output_directory'], f"{post.slugified_title}.mp4")
-
+        output_path = os.path.join(RedditVideo.config.output_directory, f"{post.slugified_title}.mp4")
         if os.path.exists(output_path):
-            print(f"Skipping Already Exists : {post.title}")
+            print(f"Skipping Already Exists: {post.title}")
             continue
         else:
-            video_generator.generate_video(post, output_path, comment_limit)
+            RedditVideo.generate_video(post)
             generated_video_count += 1
+
+if __name__ == "__main__":
+    for YoutubeChannel in YoutubeChannels:
+        RedditVideo = RedditVideoGenerator(YoutubeChannel)
+        process_video_for_channel(RedditVideo)
+
+    print("Video processing complete.")

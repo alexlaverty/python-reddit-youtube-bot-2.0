@@ -13,11 +13,8 @@ from .selftext_clip import SelfTextClip
 from .screenshot import RedditScreenshotCapture
 from .speech_engine import generate_audio
 import praw
-from settings import (
-    VIDEO_CONFIG,
-    COMMENT_CONFIG,
-)
-
+from settings import (YouTubeChannelConfig)
+from auth import REDDIT_AUTH
 
 class RedditPost:
     def __init__(self, title: str, selftext: str, comments: List[str], id:str):
@@ -36,19 +33,8 @@ class RedditPost:
 
 
 class RedditVideoGenerator:
-    def __init__(self, subreddit_name: str,
-                 client_id: str,
-                 client_secret: str,
-                 user_agent: str,
-                 background_video_path: str,
-                 background_music_path: str):
-        self.subreddit_name = subreddit_name
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.user_agent = user_agent
-        self.background_video_path = background_video_path
-        self.background_music_path = background_music_path
-
+    def __init__(self, channel_config: YouTubeChannelConfig):
+        self.config = channel_config
 
     def overlay_comments(self, background_clip, concatenated_comments):
 
@@ -77,14 +63,14 @@ class RedditVideoGenerator:
 
         :return: Authenticated praw.Reddit instance.
         """
-        return praw.Reddit(client_id=self.client_id,
-                           client_secret=self.client_secret,
-                           user_agent=self.user_agent)
+        return praw.Reddit(client_id=REDDIT_AUTH['client_id'],
+                           client_secret=REDDIT_AUTH['client_secret'],
+                           user_agent=REDDIT_AUTH['user_agent'])
 
     def get_top_posts(self, limit: int = 10) -> List[RedditPost]:
-        print(f"Retrieving Top {str(limit)} Reddit Posts from {self.subreddit_name}")
+        print(f"Retrieving Top {str(limit)} Reddit Posts from {self.config.subreddit_name}")
         reddit = self.authenticate()
-        subreddit = reddit.subreddit(self.subreddit_name)
+        subreddit = reddit.subreddit(self.config.subreddit_name)
         top_posts = subreddit.top(time_filter='day', limit=limit)
 
         reddit_posts = []
@@ -92,7 +78,7 @@ class RedditVideoGenerator:
 
             # Skip NSFW posts
             if post.over_18:
-                if not VIDEO_CONFIG['EnableNSFW']:
+                if not self.config.enable_nsfw:
                     print(f"Skipping NSFW post: {post.title}")
                     continue
 
@@ -105,10 +91,10 @@ class RedditVideoGenerator:
 
     def generate_title_text_clip(self, post,
                                  background_clip: VideoFileClip) -> TextClip:
-        title_audio_path = os.path.join(COMMENT_CONFIG['output_directory'], f"{post.id}.mp3")
+        title_audio_path = os.path.join(self.config.comment_output_directory, f"{post.id}.mp3")
 
         if not os.path.exists(title_audio_path):
-            generate_audio(post.title, title_audio_path)
+            generate_audio(post.title, title_audio_path, self.config)
 
         title_audio_clip = AudioFileClip(title_audio_path)
 
@@ -127,51 +113,56 @@ class RedditVideoGenerator:
 
         return title_text_clip
 
-    def generate_video(self, post, output_path: str, comment_limit: int = 10):
+    def generate_video(self, post):
         print(f"Generating Video : {post.title}")
 
         # Create a folder to store comment audio clips
-        os.makedirs(COMMENT_CONFIG['output_directory'], exist_ok=True)
+        os.makedirs(self.config.output_directory, exist_ok=True)
 
         # Create a video clip with the specified background video
-        background_clip = VideoFileClip(self.background_video_path)
+        background_video_path = os.path.join("assets", self.config.background_video_path)
+        background_clip = VideoFileClip(background_video_path).volumex(0)
 
-        title_audio_path = os.path.join(COMMENT_CONFIG['output_directory'],
+        title_audio_path = os.path.join(self.config.comment_output_directory,
                                         f"{post.id}.mp3")
 
         if not os.path.exists(title_audio_path):
-            generate_audio(post.title, title_audio_path)
+            generate_audio(post.title, title_audio_path, self.config)
 
         # title_audio_clip = AudioFileClip(title_audio_path)
 
         title_text_clip = self.generate_title_text_clip(post, background_clip)
 
-        # Read out the selftext using text-to-speech if it's not empty
-        selftext_clip = SelfTextClip.create(post.selftext)
-        if selftext_clip:
-            final_clip = selftext_clip.overlay_on_background(background_clip)
-        else:
-            # If selftext is empty, use only the background clip
-            final_clip = background_clip
+        # # Read out the selftext using text-to-speech if it's not empty
+        # selftext_clip = SelfTextClip.create(post.selftext)
+        # if selftext_clip:
+        #     final_clip = selftext_clip.overlay_on_background(background_clip)
+        # else:
+        #     # If selftext is empty, use only the background clip
+        #     final_clip = background_clip
 
         # Retrieve top comments for each post, excluding comments exceeding
         # max_comment_length and those with [removed]
+
+        final_clip = background_clip
+
         comments = [
             comment
             for i, comment in enumerate(post.comments.list())
             if hasattr(comment, 'body')
-            and len(comment.body) <= COMMENT_CONFIG['max_comment_length']
+            and len(comment.body) <= self.config.max_comment_length
             and "[removed]" not in comment.body
         ]
 
-        screenshot_capture = RedditScreenshotCapture()
+        screenshot_capture = RedditScreenshotCapture(self.config)
         screenshot_capture.capture_element_screenshot(comments)
 
         # Create a list to store comment clips
         comment_clips = CommentClip.create_comment_clips(comments,
-                                                         comment_limit,
+                                                         self.config.comment_limit,
                                                          post.slugified_title,
-                                                         background_clip)
+                                                         background_clip,
+                                                         self.config)
 
         comment_clips.insert(0, title_text_clip)
 
@@ -182,6 +173,8 @@ class RedditVideoGenerator:
 
             final_clip = self.overlay_comments(final_clip,
                                                concatenated_comments)
+
+        output_path = os.path.join(self.config.output_directory, f"{post.slugified_title}.mp4")
 
         # Write the final video to the specified output path
         print(f"Writing the final video to the specified output path: {output_path}")
